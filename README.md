@@ -1,5 +1,5 @@
 # Tests for Neural Networks with multiple outputs
-This project uses Pytorch and Keras. It requires `Python 3.12` and a CUDA capable GPU.
+This project uses Pytorch. It requires `Python 3.12` and a CUDA capable GPU.
 
 ## Installation
 1. Create a `venv` with `Python 3.12`
