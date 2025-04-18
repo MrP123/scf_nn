@@ -140,47 +140,38 @@ def test_model(model: torch.nn.Module, dataset: torch.utils.data.Dataset, locati
 
     return fig, ax, errors
 
-def plot_violins_from_error(errors: dict[str, list[float]], threshold: float = 100) -> tuple[plt.Figure, plt.Axes]:
-    #ToDo clean up this mess! Make sure that only 2 axes are used when actual values were removed
+def __plot_violins_no_outliers(errors: list[list[float]], labels: list[str]) -> tuple[plt.Figure, plt.Axes]:
+    fig, ax = plt.subplots()
 
-    errors = dict(sorted(errors.items())) # sort so that keys are in alphabetical order
+    ax.violinplot(errors)
+    ax.set_xticks([i + 1 for i in range(len(labels))], labels=labels)
+    ax.set_ylabel("Error (mm)")
 
-    fig, (ax_top, ax_bot) = plt.subplots(2, 1, sharex=True)
-    ax_bot: plt.Axes
-    ax_top: plt.Axes
+    return fig, ax
 
-    fig.subplots_adjust(hspace=0.05)  # adjust space between Axes
+def __plot_violins_wit_outliers(errors: list[list[float]], outliers: list[list[float]], labels: list[str]) -> tuple[plt.Figure, tuple[plt.Axes, plt.Axes]]:
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111) #Dummy axes spanning over other 2 for centered y label
 
-    all_data = [v for v in errors.values()]
+    # Actual axes for plotting
+    ax_top = fig.add_subplot(211)
+    ax_bot = fig.add_subplot(212, sharex=ax_top)
+    fig.subplots_adjust(hspace=0.05)  
+    
+    ax.spines['top'].set_color('none')
+    ax.spines['bottom'].set_color('none')
+    ax.spines['left'].set_color('none')
+    ax.spines['right'].set_color('none')
+    ax.tick_params(labelcolor='w', top=False, bottom=False, left=False, right=False)
+    ax.set_ylabel("Error (mm)")
 
-    removed_count = sum(1 for cat in all_data for val in cat if val > threshold) #check how many values will be removed
-    if removed_count > 0:
-        print(f"Removed {removed_count} values exceeding the threshold of {threshold}")
-        removed_data = [[val for val in cat if val > threshold] for cat in all_data]
-        all_data = [[val for val in cat if val <= threshold] for cat in all_data] #hack for quick thresholding
+    ax_bot.violinplot(errors)
 
-    ax_bot.violinplot(all_data)
-    _, ax_bot_y_top = ax_bot.get_ylim()
-
-    # Find plotting range for outliers based on their min/max values
-    # Makes sure only points above the plotting range of the violin plots are considered
-    # ToDo: Refactor and check if working in all cases
-    #max_outlier = -np.inf
-    #min_outlier = +np.inf
-
-    if removed_count > 0:
-        for i, vals in enumerate(removed_data):
-            if len(vals) == 0:
-                continue
-            ax_top.plot(np.ones(len(vals)) * (i+1), vals, 'x')
-
-        #if np.max(vals) > max_outlier:
-        #    max_outlier = np.max(vals)
-
-        #if np.min(vals) < min_outlier:
-        #    min_outlier = np.min(vals)
-
-    #ax_top.set_ylim(bottom=min_outlier, top=max_outlier)  # outliers only
+    for i, vals in enumerate(outliers):
+        if len(vals) == 0:
+            continue
+        ax_top.plot(np.ones(len(vals)) * (i+1), vals, 'x')
 
     ax_bot.spines.top.set_visible(False)
     ax_top.spines.bottom.set_visible(False)
@@ -189,8 +180,7 @@ def plot_violins_from_error(errors: dict[str, list[float]], threshold: float = 1
     ax_top.tick_params(labeltop=False)  # don't put tick labels at the top
     ax_bot.xaxis.tick_bottom()
 
-    ax_bot.set_xticks([i + 1 for i in range(len(all_data))], labels=errors.keys())
-    ax_bot.set_ylabel("Error (mm)")
+    ax_bot.set_xticks([i + 1 for i in range(len(labels))], labels=labels)
 
     # https://matplotlib.org/stable/gallery/subplots_axes_and_figures/broken_axis.html
     d = .5  # proportion of vertical to horizontal extent of the slanted line
@@ -198,11 +188,29 @@ def plot_violins_from_error(errors: dict[str, list[float]], threshold: float = 1
                 linestyle="none", color='k', mec='k', mew=1, clip_on=False)
     ax_top.plot([0, 1], [0, 0], transform=ax_top.transAxes, **kwargs)
     ax_bot.plot([0, 1], [1, 1], transform=ax_bot.transAxes, **kwargs)
+
+    return fig, (ax_top, ax_bot)
+
+def plot_violins_from_error(errors: dict[str, list[float]], threshold: float = 100) -> tuple[plt.Figure, plt.Axes]:
+    #ToDo clean up this mess! Make sure that only 2 axes are used when actual values were removed
+
+    errors = dict(sorted(errors.items())) # sort so that keys are in alphabetical order
+    labels = list(errors.keys())
+
+    all_data = [v for v in errors.values()]
+
+    removed_data = [[val for val in cat if val > threshold] for cat in all_data]
+    all_data = [[val for val in cat if val <= threshold] for cat in all_data] #hack for quick thresholding
+
+    if any(removed_data):
+        fig, ax = __plot_violins_wit_outliers(all_data, removed_data, labels)
+    else:
+        fig, ax = __plot_violins_no_outliers(all_data, labels)
     
-    return fig, ax_bot
+    return fig, ax
 
 
 if __name__ == "__main__":
     errors = {'front': [np.float32(1.3877047), np.float32(0.4650986), np.float32(0.5736587), np.float32(0.6306847), np.float32(0.72050554), np.float32(0.49555248), np.float32(0.42456514), np.float32(2.5520551), np.float32(0.69600177), np.float32(0.50885177), np.float32(0.38532776), np.float32(0.9196282), np.float32(0.37682468), np.float32(0.91961294), np.float32(1.7318237), np.float32(0.8981945), np.float32(0.9165314), np.float32(2.5529287), np.float32(0.6140457), np.float32(0.7211996), np.float32(1.6954455), np.float32(0.39814422), np.float32(0.63076097), np.float32(1.3603944), np.float32(0.57313263), np.float32(0.57383794), np.float32(0.4244051), np.float32(0.9190333), np.float32(1.6927868), np.float32(2.5511892)], 'center': [np.float32(0.23155807), np.float32(0.24845217), np.float32(0.48596364), np.float32(0.20586996), np.float32(0.23126088), np.float32(0.19678019), np.float32(0.21014419), np.float32(0.20953189), np.float32(0.1778304), np.float32(0.21403803), np.float32(0.20629588), np.float32(0.20531254), np.float32(0.19573452), np.float32(0.18281722), np.float32(40.86105), np.float32(0.20643395), np.float32(0.20651706), np.float32(0.22505696), np.float32(0.48609045), np.float32(0.2191482), np.float32(0.20545661), np.float32(0.20125332), np.float32(0.48613265), np.float32(0.17709832), np.float32(0.21758877), np.float32(0.23174119), np.float32(40.86105), np.float32(0.20206489), np.float32(0.19248514), np.float32(0.23102918)], 'back': [np.float32(0.63613987), np.float32(0.5825399), np.float32(0.5244399), np.float32(0.78231835), np.float32(0.67898387), np.float32(0.63545346), np.float32(0.78707504), np.float32(0.91539264), np.float32(0.8008457), np.float32(0.51913035), np.float32(0.9988633), np.float32(0.52868134), np.float32(0.76627827), np.float32(0.17164242), np.float32(0.9130925), np.float32(0.6248225), np.float32(0.87640774), np.float32(0.7689523), np.float32(0.8530169), np.float32(0.6279541), np.float32(0.6252306), np.float32(0.48309714), np.float32(0.8187625), np.float32(0.5082445), np.float32(0.1708688), np.float32(0.9740913), np.float32(0.17391764), np.float32(0.5754909), np.float32(0.88909495), np.float32(0.6270349)]}
-    fig, ax = plot_violins_from_error(errors, threshold=100)
+    fig, ax = plot_violins_from_error(errors, threshold=40)
     plt.show()
