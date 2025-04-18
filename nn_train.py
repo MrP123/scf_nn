@@ -149,7 +149,7 @@ def __plot_violins_no_outliers(errors: list[list[float]], labels: list[str]) -> 
 
     return fig, ax
 
-def __plot_violins_wit_outliers(errors: list[list[float]], outliers: list[list[float]], labels: list[str]) -> tuple[plt.Figure, tuple[plt.Axes, plt.Axes]]:
+def __plot_violins_with_outliers(errors: list[list[float]], outliers: list[list[float]], labels: list[str]) -> tuple[plt.Figure, tuple[plt.Axes, plt.Axes]]:
     
     fig = plt.figure()
     ax = fig.add_subplot(111) #Dummy axes spanning over other 2 for centered y label
@@ -192,7 +192,7 @@ def __plot_violins_wit_outliers(errors: list[list[float]], outliers: list[list[f
     return fig, (ax_top, ax_bot)
 
 def plot_violins_from_error(errors: dict[str, list[float]], threshold: float = 100) -> tuple[plt.Figure, plt.Axes]:
-    #ToDo clean up this mess! Make sure that only 2 axes are used when actual values were removed
+    #ToDo clean up this mess!
 
     errors = dict(sorted(errors.items())) # sort so that keys are in alphabetical order
     labels = list(errors.keys())
@@ -203,7 +203,7 @@ def plot_violins_from_error(errors: dict[str, list[float]], threshold: float = 1
     all_data = [[val for val in cat if val <= threshold] for cat in all_data] #hack for quick thresholding
 
     if any(removed_data):
-        fig, ax = __plot_violins_wit_outliers(all_data, removed_data, labels)
+        fig, ax = __plot_violins_with_outliers(all_data, removed_data, labels)
     else:
         fig, ax = __plot_violins_no_outliers(all_data, labels)
     
