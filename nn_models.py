@@ -6,14 +6,26 @@ import torchviz
 import torchinfo
 
 class RenderableModule(torch.nn.Module):
+    """
+    This class is intended as a custom base class foor all models, just like torch.nn.Module is usually used.
+    It adds functions for rendering of the model architecture using torchviz and for printing model info with torchinfo.
+    """
+
     def __init__(self, input_params):
         super().__init__()
         self.input_params = input_params
 
     def render(self, filepath: str = "models/model_test", save_to_file: bool = False) -> torchviz.dot.Digraph:
+        """
+        Renders the model architecture as a torchviz graph and saves it to file if desired.
+        Returning the graph object allows it to be automatically rendered in a Jupyter notebook in VS Code, even when not saved to file.
+
+        A model for which render is called must be a proper model with a forward() method.
+        """
+
         x = torch.randn(1, self.input_params).to("cpu")
         y = self.to("cpu")(x)
-        dot = torchviz.make_dot(y, params=dict(self.named_parameters()))#
+        dot = torchviz.make_dot(y, params=dict(self.named_parameters()))
 
         if save_to_file:
             dot.render(filepath, format="png")
@@ -24,8 +36,12 @@ class RenderableModule(torch.nn.Module):
         print(torchinfo.summary(self, (batch_size, self.input_params)))
 
 class NNJungEtAl(RenderableModule):
+    """
+    Model identical to reference Jung et al. 2020, [3] in README.md
+    """
     def __init__(self, input_params, hidden_size: int = 20):
         super().__init__(input_params)
+
         self.hidden1 = torch.nn.Linear(input_params, hidden_size)
         self.output1 = torch.nn.Linear(hidden_size, 2) #x, y coord as output
 
@@ -35,8 +51,13 @@ class NNJungEtAl(RenderableModule):
         return x
 
 class MyNN(RenderableModule):
+    """
+    Model that extends the one presented by Jung et al. by an additional hidden layer.
+    Not used further at the moment.
+    """
     def __init__(self, input_params):
-        super().__init__()
+        super().__init__(input_params)
+
         self.hidden1 = torch.nn.Linear(input_params, 20)
         self.hidden2 = torch.nn.Linear(20, 10)
         self.output1 = torch.nn.Linear(10, 2)
@@ -49,6 +70,13 @@ class MyNN(RenderableModule):
     
 
 class NNYuEtAl(RenderableModule):
+    """
+    Model based on reference Yu et al. 2024, [1] in README.md
+    Does not feature the additional attention mechanism present in the paper.
+    Sizes if input/output tensors of layers are at the moment chosen almost arbitrarily
+
+    The input tensor for this model is of shape (batch_size, 1, input_params), this is already reflected in the training loop.
+    """
     def __init__(self, input_params):
         super().__init__(input_params)
         
