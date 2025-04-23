@@ -11,9 +11,10 @@ from typing import Callable
 from nn_helper import LocationsContainer, get_dataset
 from nn_models import NNYuEtAl
 
+
 def train_epoch(model: torch.nn.Module, dataset: torch.utils.data.Dataset, loss_fn: torch.nn.modules.loss._Loss, optimizer: torch.optim.Optimizer,
-                device: int | str = "cpu", validation_split: float = 0.2, batch_size: int = 8,
-                lambda1: float = 0.0, lambda2: float = 0.0, debug: bool = False) -> dict[str, float]:
+    device: int | str = "cpu", validation_split: float = 0.2, batch_size: int = 8, lambda1: float = 0.0, lambda2: float = 0.0, debug: bool = False
+) -> dict[str, float]:
     """
     Train a model on the provided dataset for just one epoch.
     The desired optimizer, loss function and regularization parameters (L1 & L2) can be passed as arguments.
@@ -50,7 +51,7 @@ def train_epoch(model: torch.nn.Module, dataset: torch.utils.data.Dataset, loss_
         l1_reg, l2_reg = 0.0, 0.0
         param_vec = torch.cat([param.view(-1) for param in model.parameters()]) #params need to be flattend for some model architectures. Not sure why
         l1_reg = lambda1 * torch.linalg.norm(param_vec, ord=1)
-        l2_reg = lambda2 * torch.linalg.norm(param_vec, ord=2)**2
+        l2_reg = lambda2 * torch.linalg.norm(param_vec, ord=2) ** 2
 
         loss = loss + l1_reg + l2_reg
         loss.backward()
@@ -60,7 +61,7 @@ def train_epoch(model: torch.nn.Module, dataset: torch.utils.data.Dataset, loss_
         train_loss += loss.item()
         l1_loss += l1_reg
         l2_loss += l2_reg
-                
+
         if debug and i % 10 == 0:
             print(f"Loss after mini-batch {i}: {loss.item():5f} (of which {l1_reg:5f} L1 loss; {l2_reg:5f} L2 loss)")
 
@@ -70,7 +71,7 @@ def train_epoch(model: torch.nn.Module, dataset: torch.utils.data.Dataset, loss_
         for x_val, y_val in val_dl:
             x_val: Tensor = x_val.to(device, dtype=torch.float32)
             y_val: Tensor = y_val.to(device, dtype=torch.float32)
-            
+
             if isinstance(model, NNYuEtAl):
                 x_val = x_val.reshape(x_val.shape[0], 1, x_val.shape[1])
 
@@ -84,9 +85,11 @@ def train_epoch(model: torch.nn.Module, dataset: torch.utils.data.Dataset, loss_
 
     return met
 
-def train_model(model: torch.nn.Module, dataset: torch.utils.data.Dataset, loss_fn: torch.nn.modules.loss._Loss, optimizer: torch.optim.Optimizer,
-                device: int | str = "cpu", epochs: int = 150, validation_split: float = 0.2, batch_size: int = 8,
-                lambda1: float = 0.0, lambda2: float = 0.0, debug: bool = False) -> dict[str, list[float]]:
+
+def train_model(
+    model: torch.nn.Module, dataset: torch.utils.data.Dataset, loss_fn: torch.nn.modules.loss._Loss, optimizer: torch.optim.Optimizer,
+    device: int | str = "cpu", epochs: int = 150, validation_split: float = 0.2, batch_size: int = 8, lambda1: float = 0.0, lambda2: float = 0.0, debug: bool = False,
+) -> dict[str, list[float]]:
     """
     Training function for a model that runs for the set number of epochs. Other parameters are identical to `train_epoch(...)`, as it just wraps the function in a loop.
     The returned metrics from each epoch are accumulated in `met` and returned as a history of the training process.
@@ -110,8 +113,10 @@ def train_model(model: torch.nn.Module, dataset: torch.utils.data.Dataset, loss_
 
     return met
 
+
 def test_model(model: torch.nn.Module, dataset: torch.utils.data.Dataset, locations: LocationsContainer,
-               error_fun: Callable[[npt.ArrayLike, npt.ArrayLike], float] = None, device: int | str = "cpu") -> tuple[plt.Figure, plt.Axes, dict[str, list[float]]]:
+    error_fun: Callable[[npt.ArrayLike, npt.ArrayLike], float] = None, device: int | str = "cpu"
+) -> tuple[plt.Figure, plt.Axes, dict[str, list[float]]]:
     """
     Test the trained model with the so far unseen test dataset.
     An error function `err_fun` can be provided which will be used to evaluate the performance. If none is provided the norm of (target - prediction) will be used.
@@ -142,17 +147,19 @@ def test_model(model: torch.nn.Module, dataset: torch.utils.data.Dataset, locati
             ax.plot(y_pred_np[0], y_pred_np[1], "x", markersize=8, color=location.color, label="prediction - " + location.label, alpha=0.5)
 
             if error_fun is None:
+
                 def my_error_fun(prediction: npt.ArrayLike, target: npt.ArrayLike) -> float:
                     return np.linalg.norm(target - prediction)
+
                 error_fun = my_error_fun
 
             error = error_fun(y_pred_np, y_np)
             errors[location.label].append(error)
 
-            #ax.yaxis.set_inverted(True)
+            # ax.yaxis.set_inverted(True)
             # TODO: make this into parameters!
             ax.set_xlim((-50, 50))
-            ax.set_ylim((70, -70)) #inverted!
+            ax.set_ylim((70, -70))  # inverted!
 
             ax.set_xlabel("X coordinate (mm)")
             ax.set_ylabel("Y coordinate (mm)")
@@ -163,6 +170,7 @@ def test_model(model: torch.nn.Module, dataset: torch.utils.data.Dataset, locati
             ax.legend(by_label.values(), by_label.keys())
 
     return fig, ax, errors
+
 
 def __plot_violins_no_outliers(errors: list[list[float]], labels: list[str]) -> tuple[plt.Figure, plt.Axes]:
     """
@@ -181,28 +189,28 @@ def __plot_violins_with_outliers(errors: list[list[float]], outliers: list[list[
     Plots a figure with broken axis. One axis (`ax_bot`) contains the violin plots of the data and the other (`ax_top`) contains the outliers.
     """
     fig = plt.figure()
-    #Dummy axes in the background of the whole plot, spanning over the other 2 axes
-    #This is used for getting a centered label on the y-axis, as is desired for plots with broken axes
+    # Dummy axes in the background of the whole plot, spanning over the other 2 axes
+    # This is used for getting a centered label on the y-axis, as is desired for plots with broken axes
     ax = fig.add_subplot(111)
 
     # Actual axes for plotting
     ax_top = fig.add_subplot(211)
     ax_bot = fig.add_subplot(212, sharex=ax_top)
-    fig.subplots_adjust(hspace=0.05)  
-    
-    ax.spines['top'].set_color('none')
-    ax.spines['bottom'].set_color('none')
-    ax.spines['left'].set_color('none')
-    ax.spines['right'].set_color('none')
-    ax.tick_params(labelcolor='w', top=False, bottom=False, left=False, right=False)
+    fig.subplots_adjust(hspace=0.05)
+
+    ax.spines["top"].set_color("none")
+    ax.spines["bottom"].set_color("none")
+    ax.spines["left"].set_color("none")
+    ax.spines["right"].set_color("none")
+    ax.tick_params(labelcolor="w", top=False, bottom=False, left=False, right=False)
     ax.set_ylabel("Error (mm)")
 
-    #plot the actual violin plots
+    # plot the actual violin plots
     ax_bot.violinplot(errors)
 
-    #iterate through the outliers and plot them
+    # iterate through the outliers and plot them
     for i, vals in enumerate(outliers):
-        if len(vals) == 0: #current impact location has no outliers --> skip plotting
+        if len(vals) == 0:  # current impact location has no outliers --> skip plotting
             continue
 
         ax_top.plot(np.ones(len(vals)) * (i+1), vals, 'x') #the violin plots are plotted at all integers starting from 1 to how many plots there are
@@ -211,7 +219,7 @@ def __plot_violins_with_outliers(errors: list[list[float]], outliers: list[list[
     ax_top.spines.bottom.set_visible(False)
 
     ax_top.xaxis.tick_top()
-    ax_top.tick_params(labeltop=False) # don't put tick labels at the top
+    ax_top.tick_params(labeltop=False)  # don't put tick labels at the top
     ax_bot.xaxis.tick_bottom()
 
     ax_bot.set_xticks([i + 1 for i in range(len(labels))], labels=labels)
@@ -225,31 +233,32 @@ def __plot_violins_with_outliers(errors: list[list[float]], outliers: list[list[
 
     return fig, (ax_top, ax_bot)
 
+
 def plot_violins_from_error(errors: dict[str, list[float]], threshold: float = 100) -> tuple[plt.Figure, plt.Axes]:
     """
     This function can be used to create violin plots for each impact location from the errors returned by the `test_model()` function.
-    
+
     As violin plots are IMHO not particularly great for visualizing significant outliers the threshold parameter can be used to exclude them from the violin calculation.
     These points are then specifically ploted as outlier points on a separate broken axis.
-    
+
     If the data does not contain any outliers then only normal violin plots are created.
     """
-    #TODO: clean up by making the data structure of `all_data` a np.ndarray instead of nested loops
+    # TODO: clean up by making the data structure of `all_data` a np.ndarray instead of nested loops
 
-    errors = dict(sorted(errors.items())) # sort so that keys (names of the impact locations) are in alphabetical order
-    labels = list(errors.keys()) # list of labels is now in sorted order
+    errors = dict(sorted(errors.items()))  # sort so that keys (names of the impact locations) are in alphabetical order
+    labels = list(errors.keys())  # list of labels is now in sorted order
 
     all_data = [v for v in errors.values()]
 
     removed_data = [[val for val in cat if val > threshold] for cat in all_data] #extract all points that are greater than the threshold
     all_data = [[val for val in cat if val <= threshold] for cat in all_data] #actually remove the data by keeping only values less then or equal to the threshold
 
-    #Depending on if there are outliers or not plot accordingly
+    # Depending on if there are outliers or not plot accordingly
     if any(removed_data):
         fig, ax = __plot_violins_with_outliers(all_data, removed_data, labels)
     else:
         fig, ax = __plot_violins_no_outliers(all_data, labels)
-    
+
     return fig, ax
 
 if __name__ == "__main__":
