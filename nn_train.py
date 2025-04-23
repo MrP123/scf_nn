@@ -142,7 +142,9 @@ def test_model(model: torch.nn.Module, dataset: torch.utils.data.Dataset, locati
             ax.plot(y_pred_np[0], y_pred_np[1], "x", markersize=8, color=location.color, label="prediction - " + location.label, alpha=0.5)
 
             if error_fun is None:
-                error_fun = lambda prediction, target: np.linalg.norm(target - prediction)
+                def my_error_fun(prediction: npt.ArrayLike, target: npt.ArrayLike) -> float:
+                    return np.linalg.norm(target - prediction)
+                error_fun = my_error_fun
 
             error = error_fun(y_pred_np, y_np)
             errors[location.label].append(error)

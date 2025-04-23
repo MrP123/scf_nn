@@ -2,6 +2,10 @@ import numpy as np
 import pandas as pd
 from torch.utils.data import Dataset, DataLoader, random_split
 
+from dataclasses import dataclass
+from typing import Self
+import matplotlib.pyplot as plt
+
 class MyDataset(Dataset):
     """
     Class that transforms the datasets stored as `*.csv` files into actual `Dataset`s for torch to iterate through
@@ -54,9 +58,7 @@ def get_dataset(dataset: Dataset, validation_split: float, batch_size: int) -> t
 
     return train, val
 
-from dataclasses import dataclass
-from typing import Self
-import matplotlib.pyplot as plt
+
 
 @dataclass
 class ImpactLocation():
